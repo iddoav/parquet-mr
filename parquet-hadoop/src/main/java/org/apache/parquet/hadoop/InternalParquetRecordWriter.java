@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 class InternalParquetRecordWriter<T> {
   private static final Logger LOG = LoggerFactory.getLogger(InternalParquetRecordWriter.class);
 
-  private static final int MINIMUM_RECORD_COUNT_FOR_CHECK = 100;
+  private static final int MINIMUM_RECORD_COUNT_FOR_CHECK = 1;
   private static final int MAXIMUM_RECORD_COUNT_FOR_CHECK = 10000;
 
   private final ParquetFileWriter parquetFileWriter;
@@ -147,13 +147,10 @@ class InternalParquetRecordWriter<T> {
         LOG.info("mem size {} > {}: flushing {} records to disk.", memSize, nextRowGroupSize, recordCount);
         flushRowGroupToStore();
         initStore();
-        recordCountForNextMemCheck = min(max(MINIMUM_RECORD_COUNT_FOR_CHECK, recordCount / 2), MAXIMUM_RECORD_COUNT_FOR_CHECK);
+        recordCountForNextMemCheck = MINIMUM_RECORD_COUNT_FOR_CHECK;
         this.lastRowGroupEndPos = parquetFileWriter.getPos();
       } else {
-        recordCountForNextMemCheck = min(
-            max(MINIMUM_RECORD_COUNT_FOR_CHECK, (recordCount + (long)(nextRowGroupSize / ((float)recordSize))) / 2), // will check halfway
-            recordCount + MAXIMUM_RECORD_COUNT_FOR_CHECK // will not look more than max records ahead
-            );
+        recordCountForNextMemCheck += MINIMUM_RECORD_COUNT_FOR_CHECK;
         LOG.debug("Checked mem at {} will check again at: {}", recordCount, recordCountForNextMemCheck);
       }
     }
